@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import os
 
-from src.data import load_embeddings, load_round_data,create_iteration_dataframes
+from src.data import load_embeddings, load_round_data
 
 def run_directed_evolution(
     protein_name : str,
@@ -155,12 +155,13 @@ def base_model(
             device = 'cuda'
         )
         
-
-
     model.fit(X_train, y_train)
 
-    all_predictions = model.predict(embeddings)
 
+
+
+
+    all_predictions = model.predict(embeddings)
     # # 评估结果 (在训练集和测试集上)(需要完善)
     # train_predictions = all_predictions[train_indices]
     # test_predictions = all_predictions[test_indices]
@@ -172,17 +173,17 @@ def base_model(
         'fitness': all_predictions
     })
     df_pre_all_sorted = df_pre_all.sort_values(by='fitness', ascending=False)
-    filtered_df = df_pre_all_sorted[~df_pre_all_sorted.index.isin(train_indices)]
 
-    # 取前 number_of_variants 个变异体作为下一轮
+    # Select top variants for next round
+    filtered_df = df_pre_all_sorted[~df_pre_all_sorted.index.isin(train_indices)]
+    # 定制选择策略，不适用top k
     selected_variants = filtered_df.head(number_of_variants)
 
     df_next_round = selected_variants[['variant', 'fitness']].copy()
-    df_next_round['indices'] = selected_variants.index  # 保存原始索引
+    df_next_round['indices'] = selected_variants.index 
 
-    # 显示结果
+    # 
     # print(f"successfully select {len(selected_variants)} new variants for next round:")
     # print(df_next_round.head)
 
     return df_next_round, df_pre_all_sorted
-
