@@ -77,17 +77,19 @@ def run_directed_evolution(
         output_dir = os.path.join(output_dir, protein_name, round_name)
         os.makedirs(output_dir, exist_ok=True)
 
-
-        # save the next round data to a CSV file for next training
-        # 注意正式实验时屏蔽这里，想要在实验之后，手动添加csv文件中的fitness作为训练集！！！！！！！！！！！！！！！！！！！
-        filepath = os.path.join(round_base_path, f"{protein_name}_{round_name}.csv")
-        df_next_round.to_csv(filepath, index=False)
-
-
-        # save all variants with predictions to output directory
+        # save all variants with predictions to output directory (predictions for all variants)
         df_next_round.to_csv(os.path.join(output_dir, 'next_round_variants.csv'))
         df_pre_all_sorted.to_csv(os.path.join(output_dir, 'df_pre_all_sorted.csv'))
         print(f"\nData saved to {output_dir}")
+
+        # save the next round data to a CSV file for next training (need wet lab data)
+        # 注意正式实验时屏蔽这里，想要在实验之后，手动添加csv文件中的fitness作为训练集！！！！！！！！！！！！！！！！！！！
+        # 把真实的fitness值添加到df_next_round中
+        filepath = os.path.join(round_base_path, f"{protein_name}_{round_name}.csv")
+        fitness_map = all_variants.set_index('variant')['fitness'].to_dict()
+        df_next_round['fitness'] = df_next_round['variant'].map(fitness_map)
+        df_next_round.to_csv(filepath, index=False)
+
 
 
 
@@ -176,9 +178,9 @@ def base_model(
 
     # Select top variants for next round
     filtered_df = df_pre_all_sorted[~df_pre_all_sorted.index.isin(train_indices)]
+
     # 定制选择策略，不适用top k
     selected_variants = filtered_df.head(number_of_variants)
-
     df_next_round = selected_variants[['variant', 'fitness']].copy()
     df_next_round['indices'] = selected_variants.index 
 
